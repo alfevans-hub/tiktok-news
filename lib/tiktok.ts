@@ -21,6 +21,7 @@ async function initPhotoPost(photoUrls: string[], caption: string): Promise<stri
     },
     body: JSON.stringify({
       media_type: 'PHOTO',
+      post_mode: 'DIRECT_POST',
       post_info: {
         title: caption,
         privacy_level: 'PUBLIC_TO_EVERYONE',
