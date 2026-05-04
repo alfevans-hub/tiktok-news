@@ -7,6 +7,18 @@ import type { Article } from './news'
 import type { ScriptSegment } from './script'
 
 const TMP = '/tmp'
+
+// On Vercel the deployment dir is read-only and binaries may lack execute permission.
+// Copy the binary to /tmp (always writable) and chmod it once per cold start.
+function getFFmpegBin(): string {
+  const dest = path.join(TMP, 'ffmpeg')
+  if (!fs.existsSync(dest)) {
+    if (!ffmpegStatic) throw new Error('ffmpeg-static binary not found')
+    fs.copyFileSync(ffmpegStatic, dest)
+    fs.chmodSync(dest, 0o755)
+  }
+  return dest
+}
 const WIDTH = 1080
 const HEIGHT = 1920
 const SECONDS_PER_SLIDE = 5  // each story shows for 5 seconds → 50 seconds total
@@ -39,7 +51,7 @@ export async function assembleVideo(
       await createSlide(articles[i], segments[i], imagePath)
 
       // Encode still image as a fixed-length video clip
-      execFileSync(ffmpegStatic!, [
+      execFileSync(getFFmpegBin(), [
         '-y',
         '-loop', '1',
         '-i', imagePath,
@@ -62,7 +74,7 @@ export async function assembleVideo(
 
     fs.writeFileSync(concatPath, clipPaths.map((p) => `file '${p}'`).join('\n'))
 
-    execFileSync(ffmpegStatic!, [
+    execFileSync(getFFmpegBin(), [
       '-y', '-f', 'concat', '-safe', '0',
       '-i', concatPath,
       '-c', 'copy',
