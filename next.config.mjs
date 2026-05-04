@@ -1,7 +1,10 @@
 const nextConfig = {
   experimental: {
-    // firebase-admin uses Node.js built-ins that Next.js needs to treat as external
-    serverComponentsExternalPackages: ['firebase-admin'],
+    serverComponentsExternalPackages: ['firebase-admin', 'sharp', 'ffmpeg-static'],
+  },
+  outputFileTracingIncludes: {
+    '/api/cron/daily-video': ['./node_modules/ffmpeg-static/**/*'],
+    '/api/run-pipeline': ['./node_modules/ffmpeg-static/**/*'],
   },
 }
 
