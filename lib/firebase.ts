@@ -12,7 +12,7 @@ export interface PipelineRun {
   status: PipelineStatus
   headlines: Pick<Article, 'title' | 'source' | 'url'>[]
   script: string
-  videoUrl: string | null
+  slideUrls: string[] | null
   tiktokPostId: string | null
   error: string | null
   failedStep: string | null
@@ -54,7 +54,7 @@ export async function logPipelineStart(date: string): Promise<string> {
     status: 'running' as PipelineStatus,
     headlines: [],
     script: '',
-    videoUrl: null,
+    slideUrls: null,
     tiktokPostId: null,
     error: null,
     failedStep: null,

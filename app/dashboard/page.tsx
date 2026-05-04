@@ -72,15 +72,8 @@ function RunCard({ run }: { run: PipelineRun }) {
               Post ID: <code className="bg-gray-100 px-1.5 py-0.5 rounded text-xs">{run.tiktokPostId}</code>
             </span>
           )}
-          {run.videoUrl && (
-            <a
-              href={run.videoUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-violet-600 hover:text-violet-800 font-medium"
-            >
-              Video ↗
-            </a>
+          {run.slideUrls && run.slideUrls.length > 0 && (
+            <span className="text-gray-500">{run.slideUrls.length} slides uploaded</span>
           )}
         </div>
       </div>
