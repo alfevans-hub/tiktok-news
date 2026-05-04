@@ -50,7 +50,9 @@ async function createSlide(article: Article, segment: ScriptSegment): Promise<Bu
     .jpeg({ quality: 85 })
     .toBuffer()
 
-  const overlay = await buildTextOverlay(article.title, segment.voiceover)
+  // Strip trailing source name e.g. "Headline - BBC News" → "Headline"
+  const headline = article.title.replace(/\s[-–|]\s[\w\s.]+$/, '').trim()
+  const overlay = await buildTextOverlay(headline, segment.voiceover)
 
   return sharp(resized)
     .composite([{ input: overlay, top: 0, left: 0 }])
@@ -87,12 +89,13 @@ async function buildTextOverlay(headline: string, script: string): Promise<Buffe
         'div',
         {
           style: {
-            background: 'rgba(0,0,0,0.70)',
-            padding: '40px',
-            color: 'white',
-            fontSize: '46px',
-            fontWeight: 'bold',
-            lineHeight: 1.3,
+            background: '#0d0d0d',
+            padding: '44px 40px',
+            color: '#ffffff',
+            fontSize: '58px',
+            fontWeight: '800',
+            lineHeight: 1.25,
+            letterSpacing: '-1px',
           },
         },
         headline
