@@ -1,107 +1,22 @@
-import { execFileSync } from 'child_process'
-import fs from 'fs'
-import path from 'path'
 import sharp from 'sharp'
 import type { Article } from './news'
 import type { ScriptSegment } from './script'
 
-const TMP = '/tmp'
-
-// Do NOT import ffmpeg-static — webpack mangles its __dirname-based path.
-// Instead, find the binary by checking known locations at runtime.
-// outputFileTracingIncludes in next.config.mjs ensures the binary is bundled.
-function getFFmpegBin(): string {
-  const dest = '/tmp/ffmpeg'
-  if (fs.existsSync(dest)) return dest
-
-  const candidates = [
-    '/var/task/node_modules/ffmpeg-static/ffmpeg',                     // Vercel
-    path.join(process.cwd(), 'node_modules/ffmpeg-static/ffmpeg'),     // local dev
-  ]
-  const src = candidates.find(p => { try { return fs.existsSync(p) } catch { return false } })
-  if (!src) throw new Error(`ffmpeg not found. Checked: ${candidates.join(', ')}`)
-
-  fs.copyFileSync(src, dest)
-  fs.chmodSync(dest, 0o755)
-  return dest
-}
 const WIDTH = 1080
 const HEIGHT = 1920
-const SECONDS_PER_SLIDE = 5  // each story shows for 5 seconds → 50 seconds total
 
-/**
- * Builds a TikTok-ready MP4 from article images + script text.
- *
- * For each story:
- *   1. Download the article image (or use a dark fallback)
- *   2. Resize/crop to 1080×1920 with sharp
- *   3. Composite an SVG text overlay: headline at top, script at bottom
- *   4. FFmpeg encodes the still image into a 5-second H.264 clip
- *
- * Then all 10 clips are concatenated into one ~50-second video.
- */
-export async function assembleVideo(
+export async function createSlides(
   articles: Article[],
   segments: ScriptSegment[]
-): Promise<Buffer> {
-  const runId = `run_${Date.now()}`
-
-  try {
-    const clipPaths: string[] = []
-
-    for (let i = 0; i < articles.length; i++) {
-      const imagePath = path.join(TMP, `${runId}_img_${i}.jpg`)
-      const clipPath  = path.join(TMP, `${runId}_clip_${i}.mp4`)
-
-      // Compose image + text overlay and write to disk
-      await createSlide(articles[i], segments[i], imagePath)
-
-      // Encode still image as a fixed-length video clip
-      execFileSync(getFFmpegBin(), [
-        '-y',
-        '-loop', '1',
-        '-i', imagePath,
-        '-t', String(SECONDS_PER_SLIDE),
-        '-c:v', 'libx264',
-        '-preset', 'fast',
-        '-crf', '23',
-        '-tune', 'stillimage',
-        '-pix_fmt', 'yuv420p',
-        '-r', '30',
-        clipPath,
-      ])
-
-      clipPaths.push(clipPath)
-    }
-
-    // Write concat manifest and join all clips
-    const concatPath  = path.join(TMP, `${runId}_concat.txt`)
-    const outputPath  = path.join(TMP, `${runId}_output.mp4`)
-
-    fs.writeFileSync(concatPath, clipPaths.map((p) => `file '${p}'`).join('\n'))
-
-    execFileSync(getFFmpegBin(), [
-      '-y', '-f', 'concat', '-safe', '0',
-      '-i', concatPath,
-      '-c', 'copy',
-      outputPath,
-    ])
-
-    return fs.readFileSync(outputPath)
-
-  } finally {
-    cleanup(runId)
+): Promise<Buffer[]> {
+  const buffers: Buffer[] = []
+  for (let i = 0; i < articles.length; i++) {
+    buffers.push(await createSlide(articles[i], segments[i]))
   }
+  return buffers
 }
 
-// ── Slide composition ────────────────────────────────────────────────────────
-
-async function createSlide(
-  article: Article,
-  segment: ScriptSegment,
-  outputPath: string
-): Promise<void> {
-  // Download or create background image
+async function createSlide(article: Article, segment: ScriptSegment): Promise<Buffer> {
   let base: Buffer
   if (article.urlToImage) {
     try {
@@ -112,46 +27,42 @@ async function createSlide(
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       base = Buffer.from(await res.arrayBuffer())
     } catch {
-      console.warn(`[Video] Image failed for story ${segment.storyNumber}, using fallback`)
+      console.warn(`[Slides] Image failed for story ${segment.storyNumber}, using fallback`)
       base = await darkBackground()
     }
   } else {
     base = await darkBackground()
   }
 
-  // Resize and crop to TikTok portrait dimensions
   const resized = await sharp(base)
     .resize(WIDTH, HEIGHT, { fit: 'cover', position: 'centre' })
     .jpeg({ quality: 85 })
     .toBuffer()
 
-  // Overlay headline + script text as SVG
   const overlay = Buffer.from(buildTextOverlay(article.title, segment.voiceover))
 
-  await sharp(resized)
+  return sharp(resized)
     .composite([{ input: overlay, top: 0, left: 0 }])
     .jpeg({ quality: 85 })
-    .toFile(outputPath)
+    .toBuffer()
 }
 
 function darkBackground(): Promise<Buffer> {
   return sharp({
     create: {
       width: WIDTH, height: HEIGHT, channels: 3,
-      background: { r: 26, g: 26, b: 46 },  // #1a1a2e
+      background: { r: 26, g: 26, b: 46 },
     },
   }).jpeg().toBuffer()
 }
-
-// ── SVG text overlay ─────────────────────────────────────────────────────────
 
 function buildTextOverlay(headline: string, script: string): string {
   const headlineLines = wrap(headline, 32)
   const scriptLines   = wrap(script, 38)
 
-  const HEAD_LINE_H = 58
+  const HEAD_LINE_H   = 58
   const SCRIPT_LINE_H = 52
-  const PADDING = 40
+  const PADDING       = 40
 
   const headlineBoxH = headlineLines.length * HEAD_LINE_H + PADDING * 2
   const scriptBoxH   = scriptLines.length * SCRIPT_LINE_H + PADDING * 2
@@ -181,7 +92,6 @@ function buildTextOverlay(headline: string, script: string): string {
 </svg>`
 }
 
-// Wrap text to a max number of characters per line
 function wrap(text: string, maxChars: number): string[] {
   const words = text.split(' ')
   const lines: string[] = []
@@ -199,7 +109,6 @@ function wrap(text: string, maxChars: number): string[] {
   return lines
 }
 
-// Escape characters that would break inline SVG
 function xml(s: string): string {
   return s
     .replace(/&/g, '&amp;')
@@ -207,12 +116,4 @@ function xml(s: string): string {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&apos;')
-}
-
-function cleanup(runId: string) {
-  try {
-    fs.readdirSync(TMP)
-      .filter((f) => f.startsWith(runId))
-      .forEach((f) => fs.unlinkSync(path.join(TMP, f)))
-  } catch { /* non-fatal */ }
 }
