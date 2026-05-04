@@ -10,11 +10,9 @@ const HEIGHT = 1920
 import fs from 'fs'
 import path from 'path'
 
-// Read Inter font from installed package — no network request needed
+// Font lives in public/ — always included in the Vercel deployment
 function getFont(): ArrayBuffer {
-  const file = fs.readFileSync(
-    path.join(process.cwd(), 'node_modules/@fontsource/inter/files/inter-all-400-normal.woff')
-  )
+  const file = fs.readFileSync(path.join(process.cwd(), 'public/fonts/inter.woff'))
   return file.buffer.slice(file.byteOffset, file.byteOffset + file.byteLength) as ArrayBuffer
 }
 
