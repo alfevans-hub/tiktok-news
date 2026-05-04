@@ -2,9 +2,17 @@ const nextConfig = {
   experimental: {
     serverComponentsExternalPackages: ['firebase-admin', 'sharp', 'ffmpeg-static'],
   },
+  // Ensure the ffmpeg binary is included in every serverless function bundle
   outputFileTracingIncludes: {
-    '/api/cron/daily-video': ['./node_modules/ffmpeg-static/**/*'],
-    '/api/run-pipeline': ['./node_modules/ffmpeg-static/**/*'],
+    '/**': ['./node_modules/ffmpeg-static/**/*'],
+  },
+  webpack: (config, { isServer }) => {
+    if (isServer) {
+      // webpack must not bundle ffmpeg-static — its __dirname-based path
+      // resolution breaks inside a chunk; it must be require()'d from node_modules
+      config.externals.push('ffmpeg-static')
+    }
+    return config
   },
 }
 
