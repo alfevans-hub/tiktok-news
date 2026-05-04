@@ -109,6 +109,27 @@ function RunCard({ run }: { run: PipelineRun }) {
         </div>
       )}
 
+      {/* Slides */}
+      {run.slideUrls && run.slideUrls.length > 0 && (
+        <div className="px-5 py-4 border-b border-gray-100">
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">
+            Slides ({run.slideUrls.length})
+          </p>
+          <div className="flex gap-2 overflow-x-auto pb-2">
+            {run.slideUrls.map((url, i) => (
+              <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="flex-shrink-0">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={url}
+                  alt={`Slide ${i + 1}`}
+                  className="h-40 w-auto rounded border border-gray-200 hover:opacity-90 transition-opacity"
+                />
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Error */}
       {run.error && (
         <div className="px-5 py-3 bg-red-50">
