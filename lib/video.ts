@@ -70,7 +70,6 @@ function darkBackground(): Promise<Buffer> {
 
 async function buildTextOverlay(headline: string, script: string): Promise<Buffer> {
   const fontRegular = loadFont('inter.woff')
-  const fontBold    = loadFont('inter-bold.woff')
 
   const svg = await satori(
     React.createElement(
@@ -92,10 +91,9 @@ async function buildTextOverlay(headline: string, script: string): Promise<Buffe
             background: '#0d0d0d',
             padding: '44px 40px',
             color: '#ffffff',
-            fontSize: '58px',
-            fontWeight: 700,
+            fontSize: '64px',
+            fontWeight: 400,
             lineHeight: 1.25,
-            letterSpacing: '-1px',
           },
         },
         headline
@@ -119,10 +117,9 @@ async function buildTextOverlay(headline: string, script: string): Promise<Buffe
       height: HEIGHT,
       fonts: [
         { name: 'Inter', data: fontRegular, weight: 400, style: 'normal' as const },
-        { name: 'Inter', data: fontBold,    weight: 700, style: 'normal' as const },
       ],
     }
   )
 
-  return Buffer.from(svg)
+  return sharp(Buffer.from(svg)).png().toBuffer()
 }
