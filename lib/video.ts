@@ -10,9 +10,8 @@ const HEIGHT = 1920
 import fs from 'fs'
 import path from 'path'
 
-// Font lives in public/ — always included in the Vercel deployment
-function getFont(): ArrayBuffer {
-  const file = fs.readFileSync(path.join(process.cwd(), 'public/fonts/inter.woff'))
+function loadFont(filename: string): ArrayBuffer {
+  const file = fs.readFileSync(path.join(process.cwd(), 'public/fonts', filename))
   return file.buffer.slice(file.byteOffset, file.byteOffset + file.byteLength) as ArrayBuffer
 }
 
@@ -70,7 +69,8 @@ function darkBackground(): Promise<Buffer> {
 }
 
 async function buildTextOverlay(headline: string, script: string): Promise<Buffer> {
-  const font = getFont()
+  const fontRegular = loadFont('inter.woff')
+  const fontBold    = loadFont('inter-bold.woff')
 
   const svg = await satori(
     React.createElement(
@@ -93,7 +93,7 @@ async function buildTextOverlay(headline: string, script: string): Promise<Buffe
             padding: '44px 40px',
             color: '#ffffff',
             fontSize: '58px',
-            fontWeight: '800',
+            fontWeight: 700,
             lineHeight: 1.25,
             letterSpacing: '-1px',
           },
@@ -117,7 +117,10 @@ async function buildTextOverlay(headline: string, script: string): Promise<Buffe
     {
       width: WIDTH,
       height: HEIGHT,
-      fonts: [{ name: 'Inter', data: font, weight: 400, style: 'normal' }],
+      fonts: [
+        { name: 'Inter', data: fontRegular, weight: 400, style: 'normal' as const },
+        { name: 'Inter', data: fontBold,    weight: 700, style: 'normal' as const },
+      ],
     }
   )
 
