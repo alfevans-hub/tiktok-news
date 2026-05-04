@@ -12,7 +12,7 @@ let _font: ArrayBuffer | null = null
 async function getFont(): Promise<ArrayBuffer> {
   if (_font) return _font
   const res = await fetch(
-    'https://fonts.gstatic.com/s/inter/v13/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfAZ9hiA.woff2'
+    'https://cdn.jsdelivr.net/npm/@fontsource/inter@4.5.15/files/inter-latin-400-normal.woff'
   )
   _font = await res.arrayBuffer()
   return _font
