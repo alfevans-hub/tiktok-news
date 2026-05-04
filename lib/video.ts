@@ -1,9 +1,22 @@
+import React from 'react'
 import sharp from 'sharp'
+import satori from 'satori'
 import type { Article } from './news'
 import type { ScriptSegment } from './script'
 
 const WIDTH = 1080
 const HEIGHT = 1920
+
+// Cached font — loaded once on first cold start
+let _font: ArrayBuffer | null = null
+async function getFont(): Promise<ArrayBuffer> {
+  if (_font) return _font
+  const res = await fetch(
+    'https://fonts.gstatic.com/s/inter/v13/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfAZ9hiA.woff2'
+  )
+  _font = await res.arrayBuffer()
+  return _font
+}
 
 export async function createSlides(
   articles: Article[],
@@ -39,7 +52,7 @@ async function createSlide(article: Article, segment: ScriptSegment): Promise<Bu
     .jpeg({ quality: 85 })
     .toBuffer()
 
-  const overlay = Buffer.from(buildTextOverlay(article.title, segment.voiceover))
+  const overlay = await buildTextOverlay(article.title, segment.voiceover)
 
   return sharp(resized)
     .composite([{ input: overlay, top: 0, left: 0 }])
@@ -56,64 +69,56 @@ function darkBackground(): Promise<Buffer> {
   }).jpeg().toBuffer()
 }
 
-function buildTextOverlay(headline: string, script: string): string {
-  const headlineLines = wrap(headline, 32)
-  const scriptLines   = wrap(script, 38)
+async function buildTextOverlay(headline: string, script: string): Promise<Buffer> {
+  const font = await getFont()
 
-  const HEAD_LINE_H   = 58
-  const SCRIPT_LINE_H = 52
-  const PADDING       = 40
-
-  const headlineBoxH = headlineLines.length * HEAD_LINE_H + PADDING * 2
-  const scriptBoxH   = scriptLines.length * SCRIPT_LINE_H + PADDING * 2
-  const scriptBoxY   = HEIGHT - scriptBoxH - 30
-
-  const headlineTags = headlineLines.map((line, i) =>
-    `<text x="540" y="${PADDING + 10 + i * HEAD_LINE_H}"
-      font-family="DejaVu Sans, Arial, Helvetica, sans-serif"
-      font-size="46" font-weight="bold" fill="white"
-      text-anchor="middle" dominant-baseline="hanging"
-    >${xml(line)}</text>`
-  ).join('')
-
-  const scriptTags = scriptLines.map((line, i) =>
-    `<text x="540" y="${scriptBoxY + PADDING + i * SCRIPT_LINE_H}"
-      font-family="DejaVu Sans, Arial, Helvetica, sans-serif"
-      font-size="40" fill="#f0f0f0"
-      text-anchor="middle" dominant-baseline="hanging"
-    >${xml(line)}</text>`
-  ).join('')
-
-  return `<svg width="${WIDTH}" height="${HEIGHT}" xmlns="http://www.w3.org/2000/svg">
-  <rect x="0" y="0" width="${WIDTH}" height="${headlineBoxH}" fill="rgba(0,0,0,0.68)"/>
-  ${headlineTags}
-  <rect x="0" y="${scriptBoxY}" width="${WIDTH}" height="${scriptBoxH}" fill="rgba(0,0,0,0.72)"/>
-  ${scriptTags}
-</svg>`
-}
-
-function wrap(text: string, maxChars: number): string[] {
-  const words = text.split(' ')
-  const lines: string[] = []
-  let current = ''
-  for (const word of words) {
-    const candidate = current ? `${current} ${word}` : word
-    if (candidate.length > maxChars && current) {
-      lines.push(current)
-      current = word
-    } else {
-      current = candidate
+  const svg = await satori(
+    React.createElement(
+      'div',
+      {
+        style: {
+          width: `${WIDTH}px`,
+          height: `${HEIGHT}px`,
+          display: 'flex',
+          flexDirection: 'column' as const,
+          justifyContent: 'space-between',
+          fontFamily: 'Inter',
+        },
+      },
+      React.createElement(
+        'div',
+        {
+          style: {
+            background: 'rgba(0,0,0,0.70)',
+            padding: '40px',
+            color: 'white',
+            fontSize: '46px',
+            fontWeight: 'bold',
+            lineHeight: 1.3,
+          },
+        },
+        headline
+      ),
+      React.createElement(
+        'div',
+        {
+          style: {
+            background: 'rgba(0,0,0,0.74)',
+            padding: '40px',
+            color: '#f0f0f0',
+            fontSize: '38px',
+            lineHeight: 1.4,
+          },
+        },
+        script
+      )
+    ),
+    {
+      width: WIDTH,
+      height: HEIGHT,
+      fonts: [{ name: 'Inter', data: font, weight: 400, style: 'normal' }],
     }
-  }
-  if (current) lines.push(current)
-  return lines
-}
+  )
 
-function xml(s: string): string {
-  return s
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&apos;')
+  return Buffer.from(svg)
 }
