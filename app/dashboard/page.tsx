@@ -1,6 +1,7 @@
 import { getRecentRuns } from '@/lib/firebase'
 import type { PipelineRun } from '@/lib/firebase'
 import RunNowButton from './RunNowButton'
+import SlideViewer from './SlideViewer'
 
 // Always fetch fresh data — don't cache the dashboard
 export const dynamic = 'force-dynamic'
@@ -115,18 +116,7 @@ function RunCard({ run }: { run: PipelineRun }) {
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">
             Slides ({run.slideUrls.length})
           </p>
-          <div className="flex gap-2 overflow-x-auto pb-2">
-            {run.slideUrls.map((url, i) => (
-              <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="flex-shrink-0">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={url}
-                  alt={`Slide ${i + 1}`}
-                  className="h-40 w-auto rounded border border-gray-200 hover:opacity-90 transition-opacity"
-                />
-              </a>
-            ))}
-          </div>
+          <SlideViewer urls={run.slideUrls} />
         </div>
       )}
 
