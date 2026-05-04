@@ -1,18 +1,11 @@
 const nextConfig = {
   experimental: {
-    serverComponentsExternalPackages: ['firebase-admin', 'sharp', 'ffmpeg-static'],
+    serverComponentsExternalPackages: ['firebase-admin', 'sharp'],
   },
-  // Ensure the ffmpeg binary is included in every serverless function bundle
+  // Include the ffmpeg binary in every serverless function bundle.
+  // We reference it by path at runtime (see lib/video.ts) — no import needed.
   outputFileTracingIncludes: {
     '/**': ['./node_modules/ffmpeg-static/**/*'],
-  },
-  webpack: (config, { isServer }) => {
-    if (isServer) {
-      // webpack must not bundle ffmpeg-static — its __dirname-based path
-      // resolution breaks inside a chunk; it must be require()'d from node_modules
-      config.externals.push('ffmpeg-static')
-    }
-    return config
   },
 }
 

@@ -1,22 +1,28 @@
 import { execFileSync } from 'child_process'
 import fs from 'fs'
 import path from 'path'
-import ffmpegStatic from 'ffmpeg-static'
 import sharp from 'sharp'
 import type { Article } from './news'
 import type { ScriptSegment } from './script'
 
 const TMP = '/tmp'
 
-// On Vercel the deployment dir is read-only and binaries may lack execute permission.
-// Copy the binary to /tmp (always writable) and chmod it once per cold start.
+// Do NOT import ffmpeg-static — webpack mangles its __dirname-based path.
+// Instead, find the binary by checking known locations at runtime.
+// outputFileTracingIncludes in next.config.mjs ensures the binary is bundled.
 function getFFmpegBin(): string {
-  const dest = path.join(TMP, 'ffmpeg')
-  if (!fs.existsSync(dest)) {
-    if (!ffmpegStatic) throw new Error('ffmpeg-static binary not found')
-    fs.copyFileSync(ffmpegStatic, dest)
-    fs.chmodSync(dest, 0o755)
-  }
+  const dest = '/tmp/ffmpeg'
+  if (fs.existsSync(dest)) return dest
+
+  const candidates = [
+    '/var/task/node_modules/ffmpeg-static/ffmpeg',                     // Vercel
+    path.join(process.cwd(), 'node_modules/ffmpeg-static/ffmpeg'),     // local dev
+  ]
+  const src = candidates.find(p => { try { return fs.existsSync(p) } catch { return false } })
+  if (!src) throw new Error(`ffmpeg not found. Checked: ${candidates.join(', ')}`)
+
+  fs.copyFileSync(src, dest)
+  fs.chmodSync(dest, 0o755)
   return dest
 }
 const WIDTH = 1080
