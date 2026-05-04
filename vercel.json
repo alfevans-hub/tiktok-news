@@ -1,0 +1,16 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/daily-video",
+      "schedule": "0 12 * * *"
+    }
+  ],
+  "functions": {
+    "app/api/cron/daily-video/route.ts": {
+      "maxDuration": 300
+    },
+    "app/api/run-pipeline/route.ts": {
+      "maxDuration": 300
+    }
+  }
+}
