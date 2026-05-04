@@ -7,15 +7,15 @@ import type { ScriptSegment } from './script'
 const WIDTH = 1080
 const HEIGHT = 1920
 
-// Cached font — loaded once on first cold start
-let _font: ArrayBuffer | null = null
-async function getFont(): Promise<ArrayBuffer> {
-  if (_font) return _font
-  const res = await fetch(
-    'https://cdn.jsdelivr.net/npm/@fontsource/inter@4.5.15/files/inter-latin-400-normal.woff'
+import fs from 'fs'
+import path from 'path'
+
+// Read Inter font from installed package — no network request needed
+function getFont(): ArrayBuffer {
+  const file = fs.readFileSync(
+    path.join(process.cwd(), 'node_modules/@fontsource/inter/files/inter-all-400-normal.woff')
   )
-  _font = await res.arrayBuffer()
-  return _font
+  return file.buffer.slice(file.byteOffset, file.byteOffset + file.byteLength) as ArrayBuffer
 }
 
 export async function createSlides(
@@ -70,7 +70,7 @@ function darkBackground(): Promise<Buffer> {
 }
 
 async function buildTextOverlay(headline: string, script: string): Promise<Buffer> {
-  const font = await getFont()
+  const font = getFont()
 
   const svg = await satori(
     React.createElement(
