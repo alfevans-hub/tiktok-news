@@ -19,11 +19,96 @@ export async function createSlides(
   articles: Article[],
   segments: ScriptSegment[]
 ): Promise<Buffer[]> {
-  const buffers: Buffer[] = []
+  const buffers: Buffer[] = [await createTitleSlide()]
   for (let i = 0; i < articles.length; i++) {
     buffers.push(await createSlide(articles[i], segments[i]))
   }
   return buffers
+}
+
+async function createTitleSlide(): Promise<Buffer> {
+  const logoData = fs.readFileSync(path.join(process.cwd(), 'public', 'scoop-logo.png'))
+  const logo = await sharp(logoData).resize(WIDTH, WIDTH).png().toBuffer()
+
+  const bg = await sharp({
+    create: { width: WIDTH, height: HEIGHT, channels: 3, background: { r: 8, g: 10, b: 20 } },
+  }).png().toBuffer()
+
+  const withLogo = await sharp(bg)
+    .composite([{ input: logo, top: 0, left: 0 }])
+    .png()
+    .toBuffer()
+
+  const textOverlay = await buildTitleTextOverlay()
+
+  return sharp(withLogo)
+    .composite([{ input: textOverlay, top: 0, left: 0 }])
+    .jpeg({ quality: 90 })
+    .toBuffer()
+}
+
+async function buildTitleTextOverlay(): Promise<Buffer> {
+  const fontRegular = loadFont('inter.woff')
+
+  const svg = await satori(
+    React.createElement(
+      'div',
+      {
+        style: {
+          width: `${WIDTH}px`,
+          height: `${HEIGHT}px`,
+          display: 'flex',
+          flexDirection: 'column' as const,
+          justifyContent: 'flex-end',
+          alignItems: 'center',
+          fontFamily: 'Inter',
+        },
+      },
+      React.createElement(
+        'div',
+        {
+          style: {
+            display: 'flex',
+            flexDirection: 'column' as const,
+            alignItems: 'center',
+            paddingBottom: '120px',
+          },
+        },
+        React.createElement(
+          'div',
+          {
+            style: {
+              color: '#ffffff',
+              fontSize: '80px',
+              fontWeight: 400,
+              textAlign: 'center' as const,
+            },
+          },
+          'TOP 10 STORIES'
+        ),
+        React.createElement(
+          'div',
+          {
+            style: {
+              color: '#c9a030',
+              fontSize: '44px',
+              fontWeight: 400,
+              textAlign: 'center' as const,
+              marginTop: '24px',
+            },
+          },
+          'IN THE LAST 24 HOURS'
+        )
+      )
+    ),
+    {
+      width: WIDTH,
+      height: HEIGHT,
+      fonts: [{ name: 'Inter', data: fontRegular, weight: 400, style: 'normal' as const }],
+    }
+  )
+
+  return sharp(Buffer.from(svg)).png().toBuffer()
 }
 
 async function createSlide(article: Article, segment: ScriptSegment): Promise<Buffer> {
