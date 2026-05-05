@@ -129,22 +129,8 @@ async function createSlide(article: Article, segment: ScriptSegment): Promise<Bu
     base = await darkBackground()
   }
 
-  // Blurred, darkened background fills the full frame
-  const bgLayer = await sharp(base)
+  const composited = await sharp(base)
     .resize(WIDTH, HEIGHT, { fit: 'cover', position: 'centre' })
-    .blur(30)
-    .modulate({ brightness: 0.35 })
-    .jpeg({ quality: 90 })
-    .toBuffer()
-
-  // Full image contained (no crop) centred over the blur
-  const fgLayer = await sharp(base)
-    .resize(WIDTH, HEIGHT, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
-    .png()
-    .toBuffer()
-
-  const composited = await sharp(bgLayer)
-    .composite([{ input: fgLayer, top: 0, left: 0 }])
     .jpeg({ quality: 90 })
     .toBuffer()
 
