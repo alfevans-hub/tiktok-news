@@ -46,7 +46,7 @@ async function runPipeline() {
 
     // ── Step 4: Upload ───────────────────────────────────────────────────────
     console.log('[Pipeline] Step 4: Uploading slides to Firebase Storage...')
-    const slideUrls = await uploadSlides(slideBuffers, date)
+    const slideUrls = await uploadSlides(slideBuffers, date, runId)
     await updatePipelineRun(runId, { slideUrls })
     console.log(`[Pipeline] ${slideUrls.length} slides uploaded.`)
 

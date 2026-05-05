@@ -1,7 +1,7 @@
 import { getStorage } from 'firebase-admin/storage'
 import { initFirebaseAdmin } from './firebase'
 
-export async function uploadSlides(buffers: Buffer[], date: string): Promise<string[]> {
+export async function uploadSlides(buffers: Buffer[], date: string, runId: string): Promise<string[]> {
   initFirebaseAdmin()
 
   const bucket = getStorage().bucket()
@@ -9,7 +9,7 @@ export async function uploadSlides(buffers: Buffer[], date: string): Promise<str
   const urls: string[] = []
 
   for (let i = 0; i < buffers.length; i++) {
-    const filename = `slides/${date}/slide_${i}.jpg`
+    const filename = `slides/${date}_${runId}/slide_${i}.jpg`
     const file = bucket.file(filename)
 
     await file.save(buffers[i], {
