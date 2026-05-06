@@ -66,6 +66,11 @@ export default function TermsOfService() {
           </a>.
         </p>
       </section>
+
+      <p className="text-sm text-gray-500 mt-8">
+        See also our{' '}
+        <a href="/privacy" className="text-blue-600 hover:underline">Privacy Policy</a>.
+      </p>
     </main>
   )
 }
