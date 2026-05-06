@@ -15,7 +15,7 @@ export async function GET(request: Request) {
       client_secret: 'rzY7Kln3gfqltRzvaw6bPTtWOHc7RNh7',
       code,
       grant_type: 'authorization_code',
-      redirect_uri: 'https://tiktok-news-xi.vercel.app/api/auth/tiktok/callback',
+      redirect_uri: 'https://scoopgeopolitical.vercel.app/api/auth/tiktok/callback',
     }),
   })
 

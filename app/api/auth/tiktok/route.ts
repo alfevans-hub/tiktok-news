@@ -3,7 +3,7 @@ export async function GET() {
     client_key: 'sbawl8wkei321nmmwf',
     scope: 'video.publish',
     response_type: 'code',
-    redirect_uri: 'https://tiktok-news-xi.vercel.app/api/auth/tiktok/callback',
+    redirect_uri: 'https://scoopgeopolitical.vercel.app/api/auth/tiktok/callback',
     state: 'sandbox',
   })
 
