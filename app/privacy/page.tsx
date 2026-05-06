@@ -62,6 +62,11 @@ export default function PrivacyPolicy() {
           </a>.
         </p>
       </section>
+
+      <p className="text-sm text-gray-500 mt-8">
+        See also our{' '}
+        <a href="/terms" className="text-blue-600 hover:underline">Terms of Service</a>.
+      </p>
     </main>
   )
 }
