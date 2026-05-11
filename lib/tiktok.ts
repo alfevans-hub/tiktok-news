@@ -13,6 +13,7 @@ export async function postToTikTok(photoUrls: string[], caption: string): Promis
 }
 
 async function initPhotoPost(photoUrls: string[], caption: string): Promise<string> {
+  console.log(`[TikTok] Posting ${photoUrls.length} photos. First URL: ${photoUrls[0]}`)
   const res = await fetch(`${TIKTOK_API}/post/publish/content/init/`, {
     method: 'POST',
     headers: {
