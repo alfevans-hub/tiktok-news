@@ -24,7 +24,7 @@ async function initPhotoPost(photoUrls: string[], caption: string): Promise<stri
       post_mode: 'DIRECT_POST',
       post_info: {
         title: caption,
-        privacy_level: 'PUBLIC_TO_EVERYONE',
+        privacy_level: process.env.TIKTOK_PRIVACY_LEVEL ?? 'SELF_ONLY',
         disable_duet: false,
         disable_comment: false,
         disable_stitch: false,
